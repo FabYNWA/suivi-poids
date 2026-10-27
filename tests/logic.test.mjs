@@ -266,3 +266,34 @@ test('recherche par date, façon Ctrl+F', () => {
   assert.ok(L.matchSearch(D(2026, 2, 3), 'févr'));
   assert.ok(L.matchSearch(D(2026, 8, 3), 'aout'));
 });
+
+test('une mesure à 0 n’est pas une donnée', () => {
+  const c = L.cleanRow({ d: 1, p: 98.3, mg: 0, mm: 0, mh: 0, gv: 0 });
+  assert.deepEqual(c, { d: 1, p: 98.3, mg: null, mm: null, mh: null, gv: null });
+  assert.equal(L.cleanRow({ d: 1, p: 90, mg: 22.4, mm: null, mh: 55, gv: 3.1 }).mg, 22.4);
+});
+
+test('variation : dernière valeur renseignée avant le jour, quel que soit l’écart', () => {
+  const rows = [
+    row(2026, 10, 1, 88, { mg: 23 }),
+    row(2026, 10, 10, 87, { mg: null }),
+    row(2026, 10, 21, 86, { mg: 22.4 }),
+  ];
+  assert.deepEqual(L.prevValue(rows, 'p', D(2026, 10, 27)), { value: 86, d: D(2026, 10, 21) });
+  assert.deepEqual(L.prevValue(rows, 'mg', D(2026, 10, 15)), { value: 23, d: D(2026, 10, 1) }); // saute le jour sans valeur
+  assert.equal(L.prevValue(rows, 'p', D(2026, 10, 1)), null);
+  assert.equal(L.prevValue(rows, 'p', D(2026, 10, 21)).value, 87); // strictement avant
+});
+
+test('records absolus : meilleure valeur, date la plus récente, égalités', () => {
+  const rows = [
+    row(2025, 1, 5, 90, { mm: 70 }),
+    row(2025, 6, 5, 84, { mm: 75 }),
+    row(2026, 3, 5, 84, { mm: 72 }),
+    row(2026, 9, 5, 86),
+  ];
+  const r = Object.fromEntries(L.absoluteRecords(rows).map((x) => [x.key, x]));
+  assert.deepEqual(r.p, { key: 'p', value: 84, d: D(2026, 3, 5), ties: 1 });
+  assert.deepEqual(r.mm, { key: 'mm', value: 75, d: D(2025, 6, 5), ties: 0 });
+  assert.equal(r.mg.value, null);
+});

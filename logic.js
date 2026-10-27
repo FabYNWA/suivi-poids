@@ -55,6 +55,11 @@ export function fmtDate(d, withYear = false) {
   return `${JOURS[wd]} ${day} ${MOIS[m]}${withYear ? ' ' + y : ''}`;
 }
 
+export function fmtDayYear(d) {
+  const { y, m, day } = parts(d);
+  return `${day} ${MOIS[m]} ${y}`;
+}
+
 export function fmtFull(d) {
   const { y, m, day } = parts(d);
   return `${String(day).padStart(2, '0')}/${String(m + 1).padStart(2, '0')}/${y}`;
@@ -118,6 +123,47 @@ export function parseInput(str, { min, max }) {
 }
 
 /* ---------- Données ---------- */
+
+// Une mesure à 0 n'est pas une donnée (anciens jours saisis sans composition corporelle) : elle devient « vide ».
+export function cleanRow(r) {
+  const out = { ...r };
+  for (const k of ['p', 'mg', 'mm', 'mh', 'gv']) {
+    if (out[k] != null && !(out[k] > 0)) out[k] = null;
+  }
+  return out;
+}
+
+// Dernière valeur renseignée pour une mesure, strictement avant le jour d (rows triées par date croissante).
+export function prevValue(rows, key, d) {
+  let lo = 0;
+  let hi = rows.length - 1;
+  let i = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].d < d) {
+      i = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  for (; i >= 0; i--) {
+    if (rows[i][key] != null) return { value: rows[i][key], d: rows[i].d };
+  }
+  return null;
+}
+
+// Records absolus : meilleure valeur de chaque mesure, avec la date (la plus récente si égalité) et le nombre d'égalités.
+export function absoluteRecords(rows) {
+  return METRICS.map((m) => {
+    const vals = rows.filter((r) => r[m.key] != null);
+    if (!vals.length) return { key: m.key, value: null, d: null, ties: 0 };
+    const pick = m.better === 'low' ? Math.min : Math.max;
+    const best = pick(...vals.map((r) => tenths(r[m.key])));
+    const holders = vals.filter((r) => tenths(r[m.key]) === best);
+    return { key: m.key, value: best / 10, d: holders[holders.length - 1].d, ties: holders.length - 1 };
+  });
+}
 
 export function buildIndex(rows) {
   const index = new Map();

@@ -36,7 +36,7 @@ S.D = S.today;
 /* ================= Données ================= */
 
 function setRows(rows) {
-  S.rows = rows.filter((r) => Number.isInteger(r.d) && typeof r.p === 'number').sort((a, b) => a.d - b.d);
+  S.rows = rows.filter((r) => Number.isInteger(r.d) && typeof r.p === 'number').map(L.cleanRow).filter((r) => r.p != null).sort((a, b) => a.d - b.d);
   S.index = L.buildIndex(S.rows);
   S.firstYear = S.rows.length ? L.parts(S.rows[0].d).y : L.parts(S.today).y;
   S.recTable = L.recordTable(S.rows, S.today);
@@ -247,7 +247,9 @@ function updatePills() {
   for (const m of METRICS) {
     const v = typedValue(f[m.key]);
     const flag = v != null ? L.recordFor(S.rows, m.key, m.better, v, S.D, S.D) : null;
-    $('#pill-' + m.key).innerHTML = pillHTML(flag);
+    const prev = v != null ? L.prevValue(S.rows, m.key, S.D) : null;
+    const dl = prev ? L.delta(v, prev.value, m.better) : null;
+    $('#pill-' + m.key).innerHTML = deltaHTML(dl) + pillHTML(flag);
   }
 }
 
@@ -295,8 +297,8 @@ function metricCell(m, row) {
   if (v == null) return '<td class="dim">—</td>';
   const flag = L.flagFromTable(S.recTable, m, row);
   if (m.key === 'p') {
-    const prev = L.prevEntry(S.index, row.d, 3);
-    const dl = prev ? L.delta(row.p, prev.p, m.better) : null;
+    const prev = L.prevValue(S.rows, 'p', row.d);
+    const dl = prev ? L.delta(row.p, prev.value, m.better) : null;
     return `<td><span class="cell-stack">${valueHTML(L.fmtNum(v), flag)}${deltaHTML(dl)}</span></td>`;
   }
   return `<td>${valueHTML(L.fmtNum(v), flag)}</td>`;
@@ -353,6 +355,20 @@ function renderAll({ keepForm = false } = {}) {
 
 /* ================= Rendu : écran Historique ================= */
 
+function renderRecords(hidden) {
+  const box = $('#records');
+  box.hidden = hidden || !S.loaded;
+  if (box.hidden) return;
+  const list = L.absoluteRecords(S.rows).map((r) => {
+    const m = METRICS.find((x) => x.key === r.key);
+    const val = r.value == null ? '—' : `${L.fmtNum(r.value)}${m.unit ? ' ' + m.unit : ''}`;
+    const date = r.d == null ? '' : `<button type="button" class="rec-date" data-d="${r.d}">${L.fmtDayYear(r.d)}</button>`;
+    const ties = r.ties ? `<small>+ ${r.ties} égalité${r.ties > 1 ? 's' : ''}</small>` : '';
+    return `<li><span class="rec-name m-${m.key}">${m.label}</span><b class="v abs">${val}</b><span class="rec-when">${date}${ties}</span></li>`;
+  });
+  box.innerHTML = `<h2>Records absolus</h2><ul>${list.join('')}</ul>`;
+}
+
 function renderHisto() {
   const seg = $('#rangeSeg');
   if (!seg.children.length) {
@@ -368,6 +384,7 @@ function renderHisto() {
     ? `${n} résultat${n > 1 ? 's' : ''} dans tout l’historique`
     : `${n} jour${n > 1 ? 's' : ''} saisi${n > 1 ? 's' : ''}`;
 
+  renderRecords(searching);
   const head = `<thead><tr><th scope="col">Jour</th>${METRICS.map((m) => `<th scope="col" class="m-${m.key}">${m.short}</th>`).join('')}</tr></thead>`;
   if (!S.loaded) {
     $('#histo').innerHTML = head + `<tbody><tr><td class="none" colspan="${METRICS.length + 1}">Chargement…</td></tr></tbody>`;
@@ -540,6 +557,11 @@ function bind() {
     $(id).addEventListener('click', openFromRow);
     $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') openFromRow(e); });
   }
+
+  $('#records').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-d]');
+    if (b) openDay(Number(b.dataset.d));
+  });
 
   $$('.tab').forEach((t) => t.addEventListener('click', () => switchView(t.dataset.view)));
 
