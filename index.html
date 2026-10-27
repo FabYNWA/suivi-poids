@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Suivi poids</title>
+  <meta name="description" content="Suivi du poids et de la composition corporelle">
+  <meta name="theme-color" content="#F7F5FF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15131F" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Poids">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preload" href="fonts/gabarito-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/figtree-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10.5h16M9 3.5v4M15 3.5v4"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 18a8.5 8.5 0 1 1 15 0"/><path d="M12 15l3.6-4.6"/><circle cx="12" cy="15.5" r="1"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/></symbol>
+  </svg>
+
+  <div id="app">
+    <main>
+      <!-- ============ Saisie ============ -->
+      <section id="view-saisie" class="view" aria-label="Saisie">
+        <header class="daybar">
+          <label class="daylabel">
+            <small id="dayRel"></small>
+            <strong id="dayText">…</strong>
+            <input id="dayPicker" type="date" aria-label="Choisir un jour">
+          </label>
+          <div class="daynav">
+            <button id="prev" class="icon-btn" type="button" aria-label="Jour précédent"><svg class="ic"><use href="#i-prev"/></svg></button>
+            <button id="next" class="icon-btn" type="button" aria-label="Jour suivant"><svg class="ic"><use href="#i-next"/></svg></button>
+          </div>
+          <button id="sync" class="icon-btn solo" type="button" aria-label="Actualiser les données"><svg class="ic"><use href="#i-sync"/></svg></button>
+        </header>
+
+        <div class="panel">
+          <div class="hero t-p">
+            <div class="hero-head">
+              <label for="f-p">Poids</label>
+              <span class="pill-slot" id="pill-p"></span>
+            </div>
+            <div class="hero-row">
+              <button id="pm" class="step" type="button" aria-label="Retirer 0,1 kilo"><svg class="ic"><use href="#i-minus"/></svg></button>
+              <div class="hero-input">
+                <input id="f-p" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0" aria-describedby="status">
+                <span class="unit">kg</span>
+              </div>
+              <button id="pp" class="step" type="button" aria-label="Ajouter 0,1 kilo"><svg class="ic"><use href="#i-plus"/></svg></button>
+            </div>
+            <div class="ruler" id="ruler" role="img" aria-label="">
+              <div class="ruler-track"><i class="ruler-mark"></i></div>
+              <div class="ruler-ends"><span id="rMin"></span><span class="ruler-cap">30 derniers jours</span><span id="rMax"></span></div>
+            </div>
+          </div>
+
+          <div class="fields">
+            <label class="field t-mg" for="f-mg">
+              <span class="field-name">Masse grasse</span>
+              <span class="field-box"><input id="f-mg" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="pill-slot" id="pill-mg"></span>
+            </label>
+            <label class="field t-mm" for="f-mm">
+              <span class="field-name">Masse musculaire</span>
+              <span class="field-box"><input id="f-mm" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="pill-slot" id="pill-mm"></span>
+            </label>
+            <label class="field t-mh" for="f-mh">
+              <span class="field-name">Masse hydrique</span>
+              <span class="field-box"><input id="f-mh" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="pill-slot" id="pill-mh"></span>
+            </label>
+            <label class="field t-gv" for="f-gv">
+              <span class="field-name">Graisse viscérale</span>
+              <span class="field-box"><input id="f-gv" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="0,0"></span>
+              <span class="pill-slot" id="pill-gv"></span>
+            </label>
+          </div>
+        </div>
+
+        <button id="save" class="primary" type="button">Enregistrer</button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+
+        <section class="block" aria-labelledby="recentTitle">
+          <div class="block-head">
+            <h2 id="recentTitle">7 derniers jours</h2>
+            <div class="seg" id="nSeg" role="group" aria-label="Nombre de jours affichés">
+              <button type="button" data-n="7" aria-pressed="true">7 j</button>
+              <button type="button" data-n="10" aria-pressed="false">10 j</button>
+            </div>
+          </div>
+          <div class="card"><table class="grid" id="recent"></table></div>
+          <p class="legend"><span class="ex abs">0,0</span>Record absolu<span class="ex w30">0,0</span>Record 30 j</p>
+        </section>
+
+        <section class="block" aria-labelledby="cmpTitle">
+          <div class="block-head"><h2 id="cmpTitle">Comparaison</h2></div>
+          <ul class="cmp-list card" id="cmp"></ul>
+        </section>
+
+        <footer class="foot">
+          <span id="syncNote"></span>
+          <button id="lockBtn" class="link" type="button">Verrouiller</button>
+        </footer>
+      </section>
+
+      <!-- ============ Historique ============ -->
+      <section id="view-histo" class="view view-histo" aria-label="Historique" hidden>
+        <div class="histo-head">
+          <div class="seg seg-wide" id="rangeSeg" role="group" aria-label="Période affichée"></div>
+          <div class="search">
+            <svg class="ic ic-sm"><use href="#i-search"/></svg>
+            <input id="q" type="search" placeholder="Date, mois ou année" autocomplete="off" enterkeyhint="search" aria-label="Rechercher une date">
+            <label class="icon-btn jump" aria-label="Aller à une date">
+              <svg class="ic"><use href="#i-cal"/></svg>
+              <input id="jump" type="date">
+            </label>
+          </div>
+          <div class="meta">
+            <span id="count"></span>
+            <span class="legend legend-inline"><span class="ex abs">0,0</span>Absolu<span class="ex w30">0,0</span>30 j</span>
+          </div>
+        </div>
+        <div class="tablescroll"><table class="grid" id="histo"></table></div>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="Navigation">
+      <button class="tab" type="button" data-view="saisie" aria-selected="true"><span class="tab-ic"><svg class="ic"><use href="#i-gauge"/></svg></span>Saisie</button>
+      <button class="tab" type="button" data-view="histo" aria-selected="false"><span class="tab-ic"><svg class="ic"><use href="#i-list"/></svg></span>Historique</button>
+    </nav>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <div id="lock" class="lock" hidden>
+    <form id="lockForm" autocomplete="off">
+      <img src="icons/icon-192.png" alt="" width="84" height="84">
+      <h1>Suivi poids</h1>
+      <p id="lockMsg">Entre ton code d’accès.</p>
+      <input id="code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Code d’accès" placeholder="Code d’accès">
+      <button class="primary" type="submit">Déverrouiller</button>
+    </form>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
