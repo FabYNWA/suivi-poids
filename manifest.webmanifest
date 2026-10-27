@@ -3,8 +3,8 @@
   "short_name": "Poids",
   "description": "Suivi du poids et de la composition corporelle",
   "lang": "fr",
-  "start_url": "/suivi-poids/",
-  "scope": "/suivi-poids/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#2C2170",
@@ -27,5 +27,5 @@
       "purpose": "maskable"
     }
   ],
-  "id": "/suivi-poids/"
+  "id": "./"
 }

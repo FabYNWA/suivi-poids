@@ -1,6 +1,6 @@
 // Service worker : l'appli s'ouvre depuis le cache du téléphone, puis se met à jour en arrière-plan.
 // Les appels au relais (autre domaine) ne passent jamais par ici. Changer VERSION force le rechargement.
-const VERSION = 'suivi-poids-v8';
+const VERSION = 'suivi-poids-v9';
 
 const ASSETS = [
   './',
