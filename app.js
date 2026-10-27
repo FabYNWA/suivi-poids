@@ -251,7 +251,7 @@ function updatePills() {
     const dl = prev ? L.delta(v, prev.value, m.better) : null;
     $('#pill-' + m.key).innerHTML = pillHTML(flag);
     $('#delta-' + m.key).innerHTML = dl
-      ? `${deltaHTML(dl)}<span class="was">avant ${L.fmtNum(prev.value)}${m.key === 'p' ? ' · ' + L.fmtDate(prev.d).replace(/^\S+\s/, '') : ''}</span>`
+      ? `${deltaHTML(dl)}<span class="was">${L.fmtNum(prev.value)}${m.key === 'p' ? ' · ' + L.fmtDate(prev.d).replace(/^\S+\s/, '') : ''}</span>`
       : '';
   }
 }
