@@ -155,7 +155,13 @@ main { flex: 1; min-height: 0; position: relative; }
 .ruler-cap { font-weight: 500; opacity: 0.85; }
 
 .fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-.field { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 124px; padding: 12px 10px; text-align: center; border-radius: 20px; background: var(--surface); cursor: text; transition: background 0.15s, box-shadow 0.15s; }
+.field { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 0; padding: 14px 8px 10px; text-align: center; border-radius: 20px; background: var(--surface); cursor: text; transition: background 0.15s, box-shadow 0.15s; }
+.delta-line { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 20px; white-space: nowrap; }
+.delta-line .d { font-size: 14px; }
+.delta-line .was { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.hero .delta-line { margin: -4px 0 8px; }
+.hero .delta-line .d { font-size: 15px; }
+.hero .delta-line .was { color: var(--hero-ink-2); font-size: 13.5px; }
 .field-name { font-size: 14px; font-weight: 700; color: var(--ink-2); }
 .t-mg { background: var(--t-mg); } .t-mg .field-name, .t-mg .unit { color: var(--c-mg); }
 .t-mm { background: var(--t-mm); } .t-mm .field-name, .t-mm .unit { color: var(--c-mm); }
@@ -174,7 +180,7 @@ main { flex: 1; min-height: 0; position: relative; }
 .hero-input input:focus-visible, .field-box input:focus-visible, .search input:focus-visible, .lock input:focus-visible { outline: none; }
 
 .pill-slot { display: flex; align-items: center; gap: 8px; min-height: 22px; }
-.field .pill-slot { position: absolute; left: 0; right: 0; bottom: 7px; justify-content: center; }
+.field .pill-slot { justify-content: center; }
 .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
 .pill.abs { background: var(--amber); color: var(--on-amber); }
 .pill.w30 { color: var(--amber-ink); box-shadow: inset 0 0 0 1.5px var(--amber-line); }

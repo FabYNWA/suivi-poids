@@ -62,6 +62,7 @@
               </div>
               <button id="pp" class="step" type="button" aria-label="Ajouter 0,1 kilo"><svg class="ic"><use href="#i-plus"/></svg></button>
             </div>
+            <div class="delta-line" id="delta-p"></div>
             <div class="ruler" id="ruler" role="img" aria-label="">
               <div class="ruler-track"><i class="ruler-mark"></i></div>
               <div class="ruler-ends"><span id="rMin"></span><span class="ruler-cap">30 derniers jours</span><span id="rMax"></span></div>
@@ -72,21 +73,25 @@
             <label class="field t-mg" for="f-mg">
               <span class="field-name">Masse grasse</span>
               <span class="field-box"><input id="f-mg" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="delta-line" id="delta-mg"></span>
               <span class="pill-slot" id="pill-mg"></span>
             </label>
             <label class="field t-mm" for="f-mm">
               <span class="field-name">Masse musculaire</span>
               <span class="field-box"><input id="f-mm" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="delta-line" id="delta-mm"></span>
               <span class="pill-slot" id="pill-mm"></span>
             </label>
             <label class="field t-mh" for="f-mh">
               <span class="field-name">Masse hydrique</span>
               <span class="field-box"><input id="f-mh" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="0,0"><span class="unit">%</span></span>
+              <span class="delta-line" id="delta-mh"></span>
               <span class="pill-slot" id="pill-mh"></span>
             </label>
             <label class="field t-gv" for="f-gv">
               <span class="field-name">Graisse viscérale</span>
               <span class="field-box"><input id="f-gv" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="0,0"></span>
+              <span class="delta-line" id="delta-gv"></span>
               <span class="pill-slot" id="pill-gv"></span>
             </label>
           </div>

@@ -249,7 +249,10 @@ function updatePills() {
     const flag = v != null ? L.recordFor(S.rows, m.key, m.better, v, S.D, S.D) : null;
     const prev = v != null ? L.prevValue(S.rows, m.key, S.D) : null;
     const dl = prev ? L.delta(v, prev.value, m.better) : null;
-    $('#pill-' + m.key).innerHTML = deltaHTML(dl) + pillHTML(flag);
+    $('#pill-' + m.key).innerHTML = pillHTML(flag);
+    $('#delta-' + m.key).innerHTML = dl
+      ? `${deltaHTML(dl)}<span class="was">avant ${L.fmtNum(prev.value)}${m.key === 'p' ? ' · ' + L.fmtDate(prev.d).replace(/^\S+\s/, '') : ''}</span>`
+      : '';
   }
 }
 
