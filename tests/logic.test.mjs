@@ -297,3 +297,34 @@ test('records absolus : meilleure valeur, date la plus récente, égalités', ()
   assert.deepEqual(r.mm, { key: 'mm', value: 75, d: D(2025, 6, 5), ties: 0 });
   assert.equal(r.mg.value, null);
 });
+
+/* ---------- Courbe du poids ---------- */
+
+test('courbe : périodes en mois calendaires, « Tout » garde tout', () => {
+  const today = D(2026, 11, 13);
+  const rows = [row(2024, 5, 1, 90), row(2024, 11, 13, 88), row(2025, 11, 13, 86), row(2026, 5, 13, 85), row(2026, 10, 13, 84), row(2026, 11, 13, 83, {}), { ...row(2026, 11, 12, 83), p: null }];
+  const days = (id) => L.curvePoints(rows, today, id).map((r) => r.d);
+  assert.equal(days('all').length, 6);
+  assert.deepEqual(days('24'), [D(2024, 11, 13), D(2025, 11, 13), D(2026, 5, 13), D(2026, 10, 13), D(2026, 11, 13)]); // bornes incluses
+  assert.deepEqual(days('12'), [D(2025, 11, 13), D(2026, 5, 13), D(2026, 10, 13), D(2026, 11, 13)]);
+  assert.deepEqual(days('6'), [D(2026, 5, 13), D(2026, 10, 13), D(2026, 11, 13)]);
+  assert.deepEqual(days('1'), [D(2026, 10, 13), D(2026, 11, 13)]);
+  assert.equal(L.curvePoints(rows, today, 'inconnu').length, 6);
+});
+
+test('courbe : graduations rondes qui encadrent les valeurs', () => {
+  assert.deepEqual(L.niceTicks(81.3, 86.2), [81, 82, 83, 84, 85, 86, 87]);
+  assert.deepEqual(L.niceTicks(70.4, 95.9), [70, 80, 90, 100]);
+  const flat = L.niceTicks(84, 84); // une seule valeur : on garde une plage lisible
+  assert.ok(flat.length >= 2 && flat[0] < 84 && flat[flat.length - 1] > 84);
+});
+
+test('courbe : repères de dates adaptés à la durée', () => {
+  const week = L.dateTicks(D(2026, 10, 13), D(2026, 11, 13));
+  assert.equal(week[0].label, '13 oct.');
+  assert.equal(week[1].d - week[0].d, 7 * L.DAY);
+  const six = L.dateTicks(D(2026, 5, 13), D(2026, 11, 13)).map((t) => t.label);
+  assert.deepEqual(six, ['juin 26', 'juil.', 'août', 'sept.', 'oct.', 'nov.']);
+  const years = L.dateTicks(D(2019, 3, 2), D(2026, 11, 13)).map((t) => t.label);
+  assert.deepEqual(years, ['2020', '2022', '2024', '2026']);
+});

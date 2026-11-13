@@ -25,6 +25,15 @@ export const RANGES = [
   { id: 'all', label: 'Tout', days: null },
 ];
 
+// Écran « Courbe » : périodes en mois calendaires (months = null : depuis le début).
+export const CURVE_RANGES = [
+  { id: 'all', label: 'Tout', months: null },
+  { id: '24', label: '2 ans', months: 24 },
+  { id: '12', label: '1 an', months: 12 },
+  { id: '6', label: '6 mois', months: 6 },
+  { id: '1', label: '1 mois', months: 1 },
+];
+
 const JOURS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 const JOURS_LONGS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -348,4 +357,54 @@ export function matchSearch(d, query) {
   if (!tokens.length) return true;
   const key = searchKey(d);
   return tokens.every((t) => key.includes(t));
+}
+
+/* ---------- Courbe du poids ---------- */
+
+// Mesures de poids de la période, de la plus ancienne à la plus récente.
+export function curvePoints(rows, today, rangeId) {
+  const r = CURVE_RANGES.find((x) => x.id === rangeId) || CURVE_RANGES[0];
+  const from = r.months == null ? -Infinity : addMonths(today, -r.months);
+  return rows.filter((x) => x.p != null && x.d >= from && x.d <= today);
+}
+
+// Graduations « rondes » (pas de 0,5 / 1 / 2 / 5 / 10 kg…) qui encadrent [lo, hi].
+export function niceTicks(lo, hi, target = 5) {
+  if (!(hi > lo)) { lo -= 0.5; hi += 0.5; }
+  const raw = (hi - lo) / target;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= raw) || 10 * mag;
+  const start = Math.floor(lo / step + 1e-9) * step;
+  const ticks = [];
+  for (let v = start; v <= hi + step * 1e-9; v += step) ticks.push(Math.round(v * 1000) / 1000);
+  if (ticks[ticks.length - 1] < hi) ticks.push(Math.round((ticks[ticks.length - 1] + step) * 1000) / 1000);
+  return ticks;
+}
+
+// Repères de l'axe des dates : une semaine sur un mois, sinon des débuts de mois espacés de 1, 3, 6, 12… mois.
+export function dateTicks(from, to) {
+  const span = (to - from) / DAY;
+  const ticks = [];
+  if (span <= 45) {
+    const step = span <= 10 ? 2 : 7;
+    for (let d = from; d <= to; d += step * DAY) ticks.push({ d, label: fmtDayMonth(d) });
+    return ticks;
+  }
+  const months = span / 30.4;
+  const step = [1, 2, 3, 6, 12, 24, 36].find((k) => months / k <= 7) || 60;
+  const { y, m } = parts(from);
+  let idx = Math.ceil((y * 12 + m) / step) * step; // alignés sur des mois « ronds » (janvier, avril, juillet…)
+  for (;; idx += step) {
+    const d = dateFromParts(Math.floor(idx / 12), idx % 12, 1);
+    if (d > to) break;
+    if (d < from) continue;
+    const t = parts(d);
+    ticks.push({ d, label: step >= 12 ? String(t.y) : t.m === 0 || !ticks.length ? `${MOIS[t.m]} ${String(t.y).slice(2)}` : MOIS[t.m] });
+  }
+  return ticks;
+}
+
+function fmtDayMonth(d) {
+  const { m, day } = parts(d);
+  return `${day} ${MOIS[m]}`;
 }

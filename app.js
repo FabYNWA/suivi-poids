@@ -4,7 +4,7 @@ import { RELAY_URL } from './config.js';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-const KEY = { code: 'sp.code', rows: 'sp.rows', at: 'sp.at', n: 'sp.n', range: 'sp.range' };
+const KEY = { code: 'sp.code', rows: 'sp.rows', at: 'sp.at', n: 'sp.n', range: 'sp.range', curve: 'sp.curve' };
 const STALE_MS = 5 * 60 * 1000; // pas de nouvel appel à Grist si les données ont moins de 5 minutes
 const METRICS = L.METRICS;
 
@@ -24,6 +24,8 @@ const S = {
   view: 'saisie',
   n: store.get(KEY.n) === '10' ? 10 : 7,
   range: L.RANGES.some((r) => r.id === store.get(KEY.range)) ? store.get(KEY.range) : '30',
+  curve: L.CURVE_RANGES.some((r) => r.id === store.get(KEY.curve)) ? store.get(KEY.curve) : 'all',
+  hover: null, // index du point touché sur la courbe (null = dernier point)
   q: '',
   at: Number(store.get(KEY.at)) || 0,
   loaded: false,
@@ -354,6 +356,7 @@ function renderAll({ keepForm = false } = {}) {
   renderRecent();
   renderLive();
   if (S.view === 'histo') renderHisto();
+  if (S.view === 'courbe') renderCurve();
 }
 
 /* ================= Rendu : écran Historique ================= */
@@ -415,17 +418,147 @@ function renderHisto() {
   $('#histo').innerHTML = head + `<tbody>${body.join('')}</tbody>`;
 }
 
+/* ================= Rendu : écran Courbe ================= */
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+let curveGeo = null; // géométrie du dernier tracé, pour suivre le doigt sans tout redessiner
+
+function renderCurve() {
+  const seg = $('#curveSeg');
+  if (!seg.children.length) {
+    seg.innerHTML = L.CURVE_RANGES.map((r) => `<button type="button" data-c="${r.id}" aria-pressed="false">${r.label}</button>`).join('');
+  }
+  $$('#curveSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === S.curve)));
+
+  const svg = $('#curve');
+  const box = $('#curveBox');
+  const W = box.clientWidth;
+  const H = box.clientHeight;
+  curveGeo = null;
+  if (!W || !H) return;
+
+  const pts = S.loaded ? L.curvePoints(S.rows, S.today, S.curve) : [];
+  if (pts.length < 2) {
+    svg.innerHTML = '';
+    svg.removeAttribute('viewBox');
+    box.querySelector('.curve-empty')?.remove();
+    box.insertAdjacentHTML('beforeend', `<div class="curve-empty">${S.loaded ? (pts.length ? 'Une seule pesée sur cette période : il en faut au moins deux pour tracer la courbe.' : 'Aucune pesée sur cette période.') : 'Chargement…'}</div>`);
+    $('#cvWhen').textContent = pts.length ? L.fmtDayYear(pts[0].d) : '—';
+    $('#cvVal').innerHTML = pts.length ? `${L.fmtNum(pts[0].p)}<span>kg</span>` : '—';
+    $('#cvVar').innerHTML = '';
+    renderCurveStats(pts);
+    return;
+  }
+  box.querySelector('.curve-empty')?.remove();
+
+  const M = { l: 36, r: 14, t: 16, b: 26 };
+  const range = L.CURVE_RANGES.find((r) => r.id === S.curve);
+  const x0 = range.months == null ? pts[0].d : L.addMonths(S.today, -range.months);
+  const x1 = S.today;
+  const xs = (d) => M.l + ((d - x0) / Math.max(1, x1 - x0)) * (W - M.l - M.r);
+
+  const vals = pts.map((r) => r.p);
+  const lo = Math.min(...vals);
+  const hi = Math.max(...vals);
+  const pad = Math.max((hi - lo) * 0.1, 0.3);
+  const ticks = L.niceTicks(lo - pad, hi + pad, 4);
+  const yMin = ticks[0];
+  const yMax = ticks[ticks.length - 1];
+  const ys = (v) => M.t + (1 - (v - yMin) / (yMax - yMin)) * (H - M.t - M.b);
+
+  const coords = pts.map((r) => [xs(r.d), ys(r.p)]);
+  const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+  const base = ys(yMin).toFixed(1);
+  const area = `${line}L${coords[coords.length - 1][0].toFixed(1)} ${base}L${coords[0][0].toFixed(1)} ${base}Z`;
+
+  const grid = ticks.map((t) => `<line class="grid-l" x1="${M.l}" x2="${W - M.r}" y1="${ys(t).toFixed(1)}" y2="${ys(t).toFixed(1)}"/><text class="ax" x="${M.l - 8}" y="${(ys(t) + 4).toFixed(1)}" text-anchor="end">${L.fmtNum(t, t % 1 ? 1 : 0)}</text>`).join('');
+  const xTicks = L.dateTicks(x0, x1);
+  const xAxis = xTicks.map((t, i) => {
+    const x = xs(t.d);
+    const anchor = i === 0 && x - M.l < 18 ? 'start' : x > W - M.r - 18 ? 'end' : 'middle';
+    return `<text class="ax" x="${x.toFixed(1)}" y="${H - 6}" text-anchor="${anchor}">${t.label}</text>`;
+  }).join('');
+
+  // Plus bas / plus haut de la période, écrits à côté du point.
+  const iLo = vals.indexOf(lo);
+  const iHi = vals.indexOf(hi);
+  const ext = (i, above) => {
+    const [x, y] = coords[i];
+    const anchor = x < M.l + 28 ? 'start' : x > W - M.r - 28 ? 'end' : 'middle';
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4" fill="currentColor"/><text class="ext" x="${x.toFixed(1)}" y="${(y + (above ? -9 : 17)).toFixed(1)}" text-anchor="${anchor}">${L.fmtNum(vals[i])}</text>`;
+  };
+  const marks = hi > lo ? ext(iHi, true) + ext(iLo, false) : '';
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('aria-label', `Poids du ${L.fmtDayYear(pts[0].d)} au ${L.fmtDayYear(pts[pts.length - 1].d)} : de ${L.fmtNum(pts[0].p)} à ${L.fmtNum(pts[pts.length - 1].p)} kg, entre ${L.fmtNum(lo)} et ${L.fmtNum(hi)} kg.`);
+  svg.innerHTML = `<defs><linearGradient id="curveFill" x1="0" y1="0" x2="0" y2="1"><stop class="stop-a" offset="0"/><stop class="stop-b" offset="1"/></linearGradient></defs>
+    ${grid}${xAxis}
+    <path class="area" d="${area}"/><path class="line" d="${line}"/>${marks}
+    <line class="cursor" id="cvCursor" y1="${M.t}" y2="${(H - M.b).toFixed(1)}" visibility="hidden"/>
+    <circle class="dot" id="cvDot" r="5.5"/>`;
+
+  curveGeo = { pts, coords, first: pts[0] };
+  paintCurveHover();
+  renderCurveStats(pts);
+}
+
+function paintCurveHover() {
+  if (!curveGeo) return;
+  const { pts, coords, first } = curveGeo;
+  const i = S.hover == null ? pts.length - 1 : Math.min(pts.length - 1, Math.max(0, S.hover));
+  const [x, y] = coords[i];
+  const dot = $('#cvDot');
+  dot.setAttribute('cx', x.toFixed(1));
+  dot.setAttribute('cy', y.toFixed(1));
+  const cur = $('#cvCursor');
+  cur.setAttribute('x1', x.toFixed(1));
+  cur.setAttribute('x2', x.toFixed(1));
+  cur.setAttribute('visibility', S.hover == null ? 'hidden' : 'visible');
+  const r = pts[i];
+  $('#cvWhen').textContent = L.fmtDayYear(r.d);
+  $('#cvVal').innerHTML = `${L.fmtNum(r.p)}<span>kg</span>`;
+  const dl = i > 0 ? L.delta(r.p, first.p, 'low') : null;
+  $('#cvVar').innerHTML = dl ? `${deltaHTML(dl)}<small class="since"> depuis le ${L.fmtDayYear(first.d)}</small>` : '';
+}
+
+function renderCurveStats(pts) {
+  const list = $('#curveStats');
+  if (!pts.length) { list.innerHTML = ''; return; }
+  const vals = pts.map((r) => r.p);
+  const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+  const item = (label, v) => `<li><small>${label}</small><b>${L.fmtNum(v)}<i>kg</i></b></li>`;
+  list.innerHTML = item('Plus bas', Math.min(...vals)) + item('Moyenne', avg) + item('Plus haut', Math.max(...vals));
+}
+
+function curveIndexAt(clientX) {
+  if (!curveGeo) return null;
+  const rect = $('#curve').getBoundingClientRect();
+  const x = clientX - rect.left;
+  const { coords } = curveGeo;
+  let a = 0;
+  let b = coords.length - 1;
+  while (b - a > 1) {
+    const mid = (a + b) >> 1;
+    if (coords[mid][0] < x) a = mid; else b = mid;
+  }
+  return Math.abs(coords[a][0] - x) <= Math.abs(coords[b][0] - x) ? a : b;
+}
+
 /* ================= Navigation, messages, verrou ================= */
 
 function switchView(view) {
   S.view = view;
   $('#view-saisie').hidden = view !== 'saisie';
   $('#view-histo').hidden = view !== 'histo';
+  $('#view-courbe').hidden = view !== 'courbe';
   $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.view === view)));
   if (view === 'histo') {
     renderHisto();
     const scroller = $('.tablescroll');
     if (scroller) scroller.scrollTop = 0;
+  } else if (view === 'courbe') {
+    S.hover = null;
+    renderCurve();
   } else {
     $('#view-saisie').scrollTop = 0;
   }
@@ -565,6 +698,26 @@ function bind() {
     const b = e.target.closest('button[data-d]');
     if (b) openDay(Number(b.dataset.d));
   });
+
+  $('#curveSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-c]');
+    if (!b) return;
+    S.curve = b.dataset.c;
+    S.hover = null;
+    store.set(KEY.curve, S.curve);
+    renderCurve();
+  });
+  const curveSvg = $('#curve');
+  const touchAt = (e) => {
+    const i = curveIndexAt(e.clientX);
+    if (i != null && i !== S.hover) { S.hover = i; paintCurveHover(); }
+  };
+  curveSvg.addEventListener('pointerdown', touchAt);
+  curveSvg.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) touchAt(e); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+    curveSvg.addEventListener(ev, () => { if (S.hover != null) { S.hover = null; paintCurveHover(); } });
+  }
+  window.addEventListener('resize', () => { if (S.view === 'courbe') renderCurve(); });
 
   $$('.tab').forEach((t) => t.addEventListener('click', () => switchView(t.dataset.view)));
 

@@ -105,7 +105,7 @@ main { flex: 1; min-height: 0; position: relative; }
 .view[hidden] { display: none; }
 .view-histo:not([hidden]) { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
 
-.tabbar { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 8px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -1px 0 var(--line); }
+.tabbar { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 8px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -1px 0 var(--line); }
 .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; padding: 0; color: var(--ink-2); font-size: 12.5px; font-weight: 600; }
 .tab-ic { display: grid; place-items: center; width: 64px; height: 32px; border-radius: 16px; transition: background 0.15s; }
 .tab[aria-selected="true"] { color: var(--ink); font-weight: 700; }
@@ -291,6 +291,37 @@ h2 { font: 800 21px/1.2 var(--font-num); }
 .tablescroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -16px; padding: 0 16px 24px; background: var(--surface); border-radius: 26px 26px 0 0; }
 .tablescroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); box-shadow: 0 1px 0 var(--line); border-bottom: 0; }
 .empty-note { padding: 28px 8px; text-align: center; color: var(--ink-2); }
+
+/* ---------- Courbe ---------- */
+
+.view-courbe { display: flex; flex-direction: column; gap: 12px; }
+.view-courbe[hidden] { display: none; }
+.view-courbe .seg-wide { margin-top: 4px; }
+.curve-card { background: var(--surface); border-radius: 26px; padding: 14px 8px 8px; }
+.curve-read { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 0 10px 6px; }
+.curve-read small { display: block; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.curve-read strong { display: block; margin-top: 1px; font: 800 38px/1.05 var(--font-num); font-variant-numeric: tabular-nums lining-nums; color: var(--c-p); }
+.curve-read strong span { margin-left: 4px; font-size: 18px; font-weight: 700; }
+.curve-var .d { font-size: 16px; }
+.curve-var .since { margin-left: 5px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.curve-var { display: flex; align-items: center; gap: 2px; padding-bottom: 4px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.curve-box { position: relative; height: min(52dvh, 340px); min-height: 220px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+#curve { display: block; width: 100%; height: 100%; color: var(--c-p); overflow: visible; }
+#curve .grid-l { stroke: var(--line); stroke-width: 1; }
+#curve .ax { fill: var(--ink-2); font: 600 12px var(--font-num); font-variant-numeric: tabular-nums lining-nums; }
+#curve .area { fill: url(#curveFill); }
+#curve .stop-a { stop-color: currentColor; stop-opacity: 0.28; }
+#curve .stop-b { stop-color: currentColor; stop-opacity: 0; }
+#curve .line { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+#curve .dot { fill: var(--surface); stroke: currentColor; stroke-width: 2.6; }
+#curve .cursor { stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 3 4; opacity: 0.7; }
+#curve .ext { fill: var(--ink-2); font: 700 12px var(--font-num); font-variant-numeric: tabular-nums lining-nums; }
+.curve-empty { display: grid; place-items: center; height: 100%; color: var(--ink-2); text-align: center; padding: 0 24px; }
+.curve-stats { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; }
+.curve-stats li { display: grid; gap: 2px; padding: 11px 12px; border-radius: 18px; background: var(--surface); }
+.curve-stats small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.curve-stats b { font: 700 21px/1.1 var(--font-num); font-variant-numeric: tabular-nums lining-nums; }
+.curve-stats b i { font-style: normal; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
 
 /* ---------- Message, verrou ---------- */
 
